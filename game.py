@@ -1,9 +1,11 @@
 import pygame
 from asteroid import Asteroids
 import time
+from world_button import World_Button
 from button import Button
 #determine error for laser
 from laser import Laser
+import Resume
 #high score 384 Alan
 class Game:
     def __init__(self, screen):
@@ -20,19 +22,36 @@ class Game:
         scale_factor = 0.05
 
         #load the spaceship image
-        self.spaceship_image = pygame.image.load("potential_character.png").convert_alpha()
-        self.background_image = pygame.image.load("background_image.png").convert()
-        #calculate the scaled dimensions
-        scaled_width = int(self.spaceship_image.get_width() * scale_factor)
-        scaled_height = int(self.spaceship_image.get_height() * scale_factor)
+        self.spaceship_images = [
+            pygame.image.load("player_char_one.png"),
+            pygame.image.load("player_char_two.png"),
+            pygame.image.load("player_char_three.png")
+        ]
 
-        #scale the image using pygame.transform.scale
-        self.spaceship_image = pygame.transform.scale(self.spaceship_image, (scaled_width, scaled_height))
+        self.planet1 = pygame.image.load("Baren.png").convert_alpha()
+        self.planet2 = pygame.image.load("Black_hole.png").convert_alpha()
+        self.planet3 = pygame.image.load("Ice.png").convert_alpha()
+        self.planet4 = pygame.image.load("Lava.png").convert_alpha()
+        self.planet5 = pygame.image.load("Terran.png").convert_alpha()
+
+        #these instance variables will be used when i want to "animate the player images"
+        self.animation_timer = 0
+        #random speed set for the interval between each image generation
+        self.animation_interval = 200  
+        self.current_frame_index = 0
+
+        spaceship_image = self.spaceship_images[self.current_frame_index]
+        initial_image = pygame.image.load("background_image.png").convert()
+        new_width = 1000  
+        new_height = 800  
+
+        # Resize the image to the new dimensions
+        self.background_image = pygame.transform.scale(initial_image, (new_width, new_height))
         #set the boundaries for the player to travel and handle in the update method
         self.min_x = 0
-        self.max_x = screen.get_width() - self.spaceship_image.get_width()
+        self.max_x = screen.get_width() - spaceship_image.get_width()
         self.min_y = 0
-        self.max_y = screen.get_height() - self.spaceship_image.get_height()
+        self.max_y = screen.get_height() - spaceship_image.get_height()
 
         #default positions and states for the player
         self.spaceship_x = 0
@@ -124,7 +143,13 @@ class Game:
             self.player_score += 1
             self.start_time = self.current_time
 
-        spaceship_rect = self.spaceship_image.get_rect()
+        current_time = pygame.time.get_ticks()
+        if current_time - self.animation_timer >= self.animation_interval:
+            self.current_frame_index = (self.current_frame_index + 1) % len(self.spaceship_images)
+            self.animation_timer = current_time
+
+        spaceship_image = self.spaceship_images[self.current_frame_index]
+        spaceship_rect = spaceship_image.get_rect()
         spaceship_rect.x = self.spaceship_x
         spaceship_rect.y = self.spaceship_y
 
@@ -183,8 +208,14 @@ class Game:
         #draw the background image
         self.screen.blit(self.background_image, (0, 0))
         #render the game objects on the screen
-        self.screen.blit(self.spaceship_image, (self.spaceship_x, self.spaceship_y))
-        score_text = self.font.render(f'Score: {self.player_score}', True, (0, 100, 100))
+        self.planet1_button.draw()
+        self.planet2_button.draw()
+        self.planet3_button.draw()
+        self.planet4_button.draw()
+        self.planet5_button.draw()
+        spaceship_image = self.spaceship_images[self.current_frame_index]
+        self.screen.blit(spaceship_image, (self.spaceship_x, self.spaceship_y))
+        score_text = self.font.render(f'Score: {self.player_score}', True, (100, 100, 100))
         self.screen.blit(score_text, (800, 5))
         #render the aseroids 
         self.asteroids.render() 
@@ -195,7 +226,6 @@ class Game:
             self.paused_button = Button(335, 75, self.paused_img, 0.25, self.screen)
             self.paused_button.draw()
             if self.resume_button.draw():
-                pygame.mixer.music.play(-1)
                 self._paused = not self._paused
                 return
             if self.quit_button.draw():
@@ -213,8 +243,6 @@ class Game:
                 quit()
 
     def paused(self):
-        #pause functionality incorrect, need to maintain the state of the game and bring up a new screen with button
-        #for whether or not the player wants tos tart a new game or quit
         while self._paused: 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
@@ -229,12 +257,17 @@ class Game:
             pygame.display.update()  
 
     def run(self):
-        pygame.display.set_caption("Play")
+        pygame.display.set_caption("Website")
         # main game loop
         clock = pygame.time.Clock()  
         # create a clock object for controlling the frame rate
         asteroid_timer = 0
         self.asteroid_interval = 2000
+        self.planet1_button = World_Button(400, 115, self.planet1, 6, self.screen)
+        self.planet2_button = World_Button(500, 515, self.planet2, 7, self.screen)
+        self.planet3_button = World_Button(750, 212, self.planet3, 6, self.screen)
+        self.planet4_button = World_Button(75, 550, self.planet4, 7, self.screen)
+        self.planet5_button = World_Button(50, 50, self.planet5, 6, self.screen)
         while True:
             clock.tick(60)
             #continuously update the state of the game with new objects and old objects new positions
@@ -244,7 +277,24 @@ class Game:
             if current_time - asteroid_timer >= self.asteroid_interval:
                 self.asteroids.generate_asteroid(self.player_score)
                 asteroid_timer = current_time
+            self.render()  
+            pygame.display.update() 
 
+            if self.planet1_button.draw():
+                Resume.resume_render()
+
+            if self.planet2_button.draw():
+                Resume.resume_render()
+
+            if self.planet3_button.draw():
+                Resume.resume_render()
+
+            if self.planet4_button.draw():
+                Resume.resume_render()
+
+            if self.planet5_button.draw():
+                Resume.resume_render()
+                
             self.render()  
 
             #render the game objects on the screen

@@ -11,16 +11,7 @@ class Button():
         self.rect.topleft = (x, y)
 
         self.clicked = False
-    def __init__(self, x, y, image, scale, screen):
-        pygame.init()
-        self.screen = screen
-        width = image.get_width()
-        height = image.get_height()
-        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
 
-        self.clicked = False
     def draw(self):
         action = False
         #get mouse position
